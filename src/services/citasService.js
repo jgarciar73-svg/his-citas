@@ -6,6 +6,17 @@ const fechas = require('../utils/fechas');
 
 const ESTADOS = ['pendiente', 'confirmada', 'cancelada', 'atendida'];
 
+// A qué estados puede pasar una cita desde cada estado. Cancelada y atendida son finales.
+const TRANSICIONES = {
+  pendiente: ['confirmada', 'cancelada'],
+  confirmada: ['atendida', 'cancelada'],
+  cancelada: [],
+  atendida: [],
+};
+
+// Solo las citas activas ocupan horario y se pueden reprogramar.
+const ESTADOS_ACTIVOS = ['pendiente', 'confirmada'];
+
 // ---------- Lectura y validación de datos de entrada (RQF-08) ----------
 
 function esObjeto(valor) {
@@ -92,6 +103,8 @@ function formatear(fila) {
     fin: fechas.aIso(fila.fin),
     motivo: fila.motivo,
     estado: fila.estado,
+    // Le dice al cliente qué botones ofrecer sin que tenga que conocer las reglas.
+    transiciones_permitidas: TRANSICIONES[fila.estado],
     creado_en: fila.creado_en,
     actualizado_en: fila.actualizado_en,
   };
@@ -188,6 +201,9 @@ async function reprogramar(id, cuerpo) {
   if (errores.length) throw new DatosInvalidos(errores);
 
   const actual = await obtenerExistente(idValido);
+  if (!ESTADOS_ACTIVOS.includes(actual.estado)) {
+    throw new DatosInvalidos([`No se puede reprogramar una cita ${actual.estado}.`]);
+  }
   const doctorFinal = doctorId || actual.doctor_id;
   if (doctorId) await exigirPacienteYDoctor(null, doctorId);
 
@@ -212,7 +228,16 @@ async function cambiarEstado(id, cuerpo) {
   }
   if (errores.length) throw new DatosInvalidos(errores);
 
-  await obtenerExistente(idValido);
+  const actual = await obtenerExistente(idValido);
+  const permitidos = TRANSICIONES[actual.estado];
+  if (!permitidos.includes(cuerpo.estado)) {
+    const detalle = permitidos.length
+      ? `Desde ${actual.estado} solo se puede pasar a: ${permitidos.join(', ')}.`
+      : `Una cita ${actual.estado} ya no cambia de estado.`;
+    throw new DatosInvalidos([`No se puede cambiar la cita de ${actual.estado} a ${cuerpo.estado}. ${detalle}`]);
+  }
+
+  // Cancelar es solo cambiar el estado: el registro se conserva como histórico (RQF-05).
   await citasRepository.actualizarEstado(idValido, cuerpo.estado);
   return formatear(await citasRepository.obtenerPorId(idValido));
 }

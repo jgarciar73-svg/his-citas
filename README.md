@@ -39,3 +39,19 @@ Endpoints (todos responden JSON):
 Códigos de respuesta: 200 y 201 cuando todo sale bien, 400 por datos inválidos y 404 cuando el recurso no existe. Un JSON o un cuerpo mal formado también da 400. Si un `paciente_id` o `doctor_id` del cuerpo no existe, la respuesta es 400 (es un dato inválido de la petición), mientras que 404 se reserva para cuando el recurso de la URL no existe.
 
 Las fechas se envían como hora local sin zona, por ejemplo `2026-10-05T09:00`.
+
+## Reglas de negocio
+
+La validación vive en la capa de servicios de la API. El calendario no decide nada por su cuenta, solo muestra lo que responde el servidor.
+
+Doble reserva: un doctor no puede tener dos citas activas (pendiente o confirmada) que se solapen. Si pasa, la API responde 409 con la cita en conflicto. Una cita que empieza justo cuando termina otra no choca. Las canceladas y atendidas no ocupan horario.
+
+Estados de una cita:
+
+- pendiente puede pasar a confirmada o cancelada
+- confirmada puede pasar a atendida o cancelada
+- cancelada y atendida son finales: no cambian de estado ni se reprograman (400)
+
+Cancelar solo cambia el estado a `cancelada`. La API no borra citas, así se conserva el histórico.
+
+Cada cita trae `transiciones_permitidas` con los estados a los que puede pasar ahora.
