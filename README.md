@@ -95,3 +95,15 @@ Cada rama se cerró con un Pull Request hacia `main` y se fusionó con un merge 
 - `feature/validacion-conflictos-estados`
 - `feature/fullcalendar-ui`
 - `feature/evidencia`
+
+## Pruebas
+
+Usan el ejecutor de pruebas que trae Node (22 o superior), sin dependencias extra.
+
+```
+npm test                    # unitarias: reglas de negocio, sin base de datos
+npm run db:up               # enciende MySQL
+npm run test:integracion    # API y MySQL reales, de extremo a extremo
+```
+
+Las unitarias revisan la validación de entrada, las fechas, la doble reserva y las transiciones de estado con repositorios de prueba. Las de integración levantan la API contra MySQL en Docker y comprueban los códigos 200, 201, 400, 404 y 409, que los cambios de estado se guarden en la base, que cancelar libere el horario y que ocho peticiones simultáneas al mismo horario dejen solo una cita. Cada corrida usa un día lejano al azar y cancela lo que creó, así que se puede repetir. Si MySQL está apagada, avisan con el comando para encenderla.
