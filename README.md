@@ -55,3 +55,16 @@ Estados de una cita:
 Cancelar solo cambia el estado a `cancelada`. La API no borra citas, así se conserva el histórico.
 
 Cada cita trae `transiciones_permitidas` con los estados a los que puede pasar ahora.
+
+## Interfaz
+
+Con la base de datos y la API en marcha, abre http://localhost:3000.
+
+- Clic o arrastre sobre un espacio vacío: abre el panel para crear una cita.
+- Clic sobre una cita: muestra su detalle y los botones para confirmar, marcar como atendida o cancelar.
+- Arrastrar una cita, o estirarla desde el borde inferior: la reprograma. Si el doctor ya tiene otra cita en ese horario, la cita vuelve a su lugar y aparece el motivo.
+- El panel izquierdo filtra por doctor y por rango de fechas.
+
+Colores: amarillo pendiente, verde confirmada, rojo cancelada, azul atendida. Las citas canceladas y atendidas no se pueden arrastrar.
+
+FullCalendar 6 y la fuente Atkinson Hyperlegible se sirven desde `node_modules`, por lo que la interfaz no necesita internet.

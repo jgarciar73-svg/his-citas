@@ -1,0 +1,555 @@
+/*
+  Criterio de diseño: la pantalla es gris azulado y neutra a propósito, para que los
+  únicos colores que llaman la atención sean los cuatro estados de la cita.
+  La fuente es Atkinson Hyperlegible, pensada para que no se confundan las letras
+  parecidas, útil cuando se leen nombres y horas a toda prisa.
+*/
+
+:root {
+  --papel: #f3f5f8;
+  --superficie: #ffffff;
+  --tinta: #1c2733;
+  --tinta-suave: #566274;
+  --linea: #d5dbe3;
+  --borde-campo: #9aa6b5;
+  --accion: #22303f;
+  --accion-hover: #2f4256;
+  --peligro: #a32a1f;
+
+  --estado-pendiente: #f0c33c;
+  --estado-pendiente-borde: #c79a0c;
+  --estado-confirmada: #1e7f4f;
+  --estado-cancelada: #c0392b;
+  --estado-atendida: #2b63b0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--tinta);
+  background: var(--papel);
+  /* Cifras del mismo ancho: las horas quedan alineadas en columna. */
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accion);
+  outline-offset: 2px;
+}
+
+/* ---------- Cabecera ---------- */
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--linea);
+}
+
+.titulo h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.titulo p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--tinta-suave);
+}
+
+/* ---------- Estructura ---------- */
+
+.area {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  overflow: auto;
+  background: var(--superficie);
+  border-right: 1px solid var(--linea);
+}
+
+.calendario-caja {
+  position: relative;
+  min-height: 0;
+  padding: 16px 20px 20px;
+}
+
+#calendario {
+  height: 100%;
+}
+
+/* ---------- Formularios y botones ---------- */
+
+.campo label,
+.etiqueta {
+  display: block;
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 1px solid var(--borde-campo);
+  border-radius: 6px;
+}
+
+.boton {
+  min-height: 40px;
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accion);
+  background: #fff;
+  border: 1px solid var(--accion);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.boton:hover {
+  background: #eaeff4;
+}
+
+.boton-primario {
+  color: #fff;
+  background: var(--accion);
+}
+
+.boton-primario:hover {
+  background: var(--accion-hover);
+}
+
+.boton-peligro {
+  color: var(--peligro);
+  border-color: var(--peligro);
+}
+
+.boton-peligro:hover {
+  background: #fbeceb;
+}
+
+.boton:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- Leyenda de estados ---------- */
+
+.leyenda {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.muestra {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 4px;
+  background: var(--c);
+  border: 1px solid rgba(28, 39, 51, 0.25);
+}
+
+.e-pendiente { --c: var(--estado-pendiente); }
+.e-confirmada { --c: var(--estado-confirmada); }
+.e-cancelada { --c: var(--estado-cancelada); }
+.e-atendida { --c: var(--estado-atendida); }
+
+.resumen {
+  margin: 0;
+  color: var(--tinta-suave);
+}
+
+/* ---------- Avisos ---------- */
+
+.aviso-zona {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  z-index: 20;
+  width: min(560px, 92%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  background: var(--accion);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(28, 39, 51, 0.25);
+  pointer-events: auto;
+}
+
+.aviso-error {
+  color: var(--tinta);
+  background: #fff;
+  border: 2px solid var(--estado-cancelada);
+}
+
+.aviso p {
+  flex: 1;
+  margin: 0;
+}
+
+.aviso button {
+  padding: 0 4px;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.mensaje-error {
+  padding: 10px 12px;
+  background: #fbeceb;
+  border-left: 4px solid var(--estado-cancelada);
+  border-radius: 4px;
+}
+
+/* ---------- Panel lateral (crear y ver detalle) ---------- */
+
+dialog.panel {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(420px, 100vw);
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  color: var(--tinta);
+  background: var(--superficie);
+  border: 0;
+  border-left: 1px solid var(--linea);
+  box-shadow: -12px 0 32px rgba(28, 39, 51, 0.18);
+}
+
+dialog.panel::backdrop {
+  background: rgba(28, 39, 51, 0.35);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.panel[open] {
+    animation: panel-entra 0.18s ease-out;
+  }
+
+  @keyframes panel-entra {
+    from {
+      opacity: 0;
+      transform: translateX(24px);
+    }
+  }
+}
+
+.panel-cuerpo {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.panel-cabecera {
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--linea);
+}
+
+.panel-cabecera h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.panel-contenido {
+  display: grid;
+  flex: 1;
+  gap: 16px;
+  align-content: start;
+  padding: 20px 24px;
+  overflow: auto;
+}
+
+.panel-pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--linea);
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.detalle {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 10px 12px;
+  margin: 0;
+}
+
+.detalle dt {
+  color: var(--tinta-suave);
+}
+
+.detalle dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.detalle .secundario {
+  display: block;
+  font-weight: 400;
+  color: var(--tinta-suave);
+}
+
+.insignia {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confirmacion {
+  padding: 12px;
+  border: 2px solid var(--estado-cancelada);
+  border-radius: 6px;
+}
+
+.confirmacion p {
+  margin: 0 0 12px;
+}
+
+.confirmacion-botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- FullCalendar ---------- */
+
+.fc {
+  --fc-border-color: var(--linea);
+  --fc-page-bg-color: var(--superficie);
+  --fc-neutral-bg-color: var(--papel);
+  --fc-today-bg-color: #e9eef4;
+  --fc-now-indicator-color: var(--accion);
+  --fc-button-bg-color: #fff;
+  --fc-button-text-color: var(--accion);
+  --fc-button-border-color: var(--accion);
+  --fc-button-hover-bg-color: #eaeff4;
+  --fc-button-hover-border-color: var(--accion);
+  --fc-button-active-bg-color: var(--accion);
+  --fc-button-active-border-color: var(--accion);
+  font-size: 0.95rem;
+}
+
+.fc .fc-button {
+  font-weight: 700;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  color: #fff;
+}
+
+.fc .fc-toolbar {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.3rem;
+}
+
+.fc .fc-toolbar-title::first-letter {
+  text-transform: uppercase;
+}
+
+.fc .fc-timegrid-slot {
+  height: 2.75em;
+}
+
+.fc .fc-event {
+  cursor: pointer;
+}
+
+/* Cada estado define sus colores una sola vez, aquí. La leyenda usa las mismas variables. */
+.fc .fc-event.estado-pendiente {
+  --fc-event-bg-color: var(--estado-pendiente);
+  --fc-event-border-color: var(--estado-pendiente-borde);
+  --fc-event-text-color: var(--tinta);
+}
+
+.fc .fc-event.estado-confirmada {
+  --fc-event-bg-color: var(--estado-confirmada);
+  --fc-event-border-color: var(--estado-confirmada);
+  --fc-event-text-color: #fff;
+}
+
+.fc .fc-event.estado-cancelada {
+  --fc-event-bg-color: var(--estado-cancelada);
+  --fc-event-border-color: var(--estado-cancelada);
+  --fc-event-text-color: #fff;
+}
+
+.fc .fc-event.estado-atendida {
+  --fc-event-bg-color: var(--estado-atendida);
+  --fc-event-border-color: var(--estado-atendida);
+  --fc-event-text-color: #fff;
+}
+
+.fc .fc-event.estado-cancelada .ev-nombre {
+  text-decoration: line-through;
+}
+
+.ev {
+  padding: 2px 5px;
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.ev > span {
+  display: block;
+}
+
+.ev-hora,
+.ev-doctor {
+  font-size: 0.82rem;
+}
+
+.ev-hora,
+.ev-nombre {
+  font-weight: 700;
+}
+
+/* Citas de 30 minutos o vistas de mes: una sola línea con hora y nombre. */
+.ev-corto,
+.fc-daygrid-event .ev {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ev-corto > span,
+.fc-daygrid-event .ev > span {
+  display: inline;
+}
+
+.ev-corto .ev-nombre,
+.fc-daygrid-event .ev .ev-nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ev-corto .ev-doctor,
+.fc-daygrid-event .ev .ev-doctor {
+  display: none;
+}
+
+/* ---------- Tablet y pantallas angostas ---------- */
+
+@media (max-width: 1000px) {
+  html,
+  body {
+    height: auto;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  .cabecera {
+    padding: 10px 16px;
+  }
+
+  .area {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .filtros {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+    padding: 12px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--linea);
+  }
+
+  .filtros .campo {
+    flex: 1 1 170px;
+  }
+
+  .leyenda-caja {
+    flex-basis: 100%;
+  }
+
+  .leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+
+  .resumen {
+    flex-basis: 100%;
+  }
+
+  .calendario-caja {
+    height: 82dvh;
+    min-height: 560px;
+    padding: 12px 12px 16px;
+  }
+}

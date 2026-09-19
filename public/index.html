@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HIS: control de citas</title>
+  <link rel="stylesheet" href="/vendor/fuente/400.css">
+  <link rel="stylesheet" href="/vendor/fuente/700.css">
+  <link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="titulo">
+      <h1>Control de citas</h1>
+      <p>Sistema Hospitalario Integrado</p>
+    </div>
+    <button id="btn-nueva" class="boton boton-primario" type="button">Nueva cita</button>
+  </header>
+
+  <main class="area">
+    <aside class="filtros" aria-label="Filtros del calendario">
+      <div class="campo">
+        <label for="filtro-doctor">Doctor</label>
+        <select id="filtro-doctor">
+          <option value="">Todos los doctores</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="filtro-desde">Desde</label>
+        <input type="date" id="filtro-desde">
+      </div>
+      <div class="campo">
+        <label for="filtro-hasta">Hasta</label>
+        <input type="date" id="filtro-hasta">
+      </div>
+      <button id="limpiar-filtros" class="boton" type="button">Quitar filtros</button>
+
+      <div class="campo leyenda-caja">
+        <p class="etiqueta" id="leyenda-titulo">Estado de la cita</p>
+        <ul class="leyenda" aria-labelledby="leyenda-titulo">
+          <li><i class="muestra e-pendiente"></i>Pendiente</li>
+          <li><i class="muestra e-confirmada"></i>Confirmada</li>
+          <li><i class="muestra e-cancelada"></i>Cancelada</li>
+          <li><i class="muestra e-atendida"></i>Atendida</li>
+        </ul>
+      </div>
+
+      <p id="resumen" class="resumen" aria-live="polite"></p>
+    </aside>
+
+    <section class="calendario-caja" aria-label="Calendario de citas">
+      <div id="aviso" class="aviso-zona"></div>
+      <div id="calendario"></div>
+    </section>
+  </main>
+
+  <dialog id="dlg-nueva" class="panel" aria-labelledby="dlg-nueva-titulo">
+    <form id="form-nueva" class="panel-cuerpo" novalidate>
+      <div class="panel-cabecera">
+        <h2 id="dlg-nueva-titulo">Nueva cita</h2>
+      </div>
+      <div class="panel-contenido">
+        <div id="nueva-error" class="mensaje-error" role="alert" hidden></div>
+        <div class="campo">
+          <label for="nueva-paciente">Paciente</label>
+          <select id="nueva-paciente" required></select>
+        </div>
+        <div class="campo">
+          <label for="nueva-doctor">Doctor</label>
+          <select id="nueva-doctor" required></select>
+        </div>
+        <div class="campo">
+          <label for="nueva-fecha">Fecha</label>
+          <input type="date" id="nueva-fecha" required>
+        </div>
+        <div class="fila">
+          <div class="campo">
+            <label for="nueva-inicio">Hora de inicio</label>
+            <input type="time" id="nueva-inicio" required>
+          </div>
+          <div class="campo">
+            <label for="nueva-fin">Hora de fin</label>
+            <input type="time" id="nueva-fin" required>
+          </div>
+        </div>
+        <div class="campo">
+          <label for="nueva-motivo">Motivo de la consulta</label>
+          <input type="text" id="nueva-motivo" maxlength="255" required>
+        </div>
+      </div>
+      <div class="panel-pie">
+        <button type="button" class="boton" id="nueva-descartar">Descartar</button>
+        <button type="submit" class="boton boton-primario" id="nueva-guardar">Guardar cita</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-detalle" class="panel" aria-labelledby="dlg-detalle-titulo">
+    <div class="panel-cuerpo">
+      <div class="panel-cabecera">
+        <h2 id="dlg-detalle-titulo">Detalle de la cita</h2>
+      </div>
+      <div class="panel-contenido">
+        <div id="detalle-error" class="mensaje-error" role="alert" hidden></div>
+        <dl class="detalle" id="detalle-datos"></dl>
+        <div id="detalle-confirmar-cancelacion" class="confirmacion" hidden>
+          <p><strong>¿Cancelar esta cita?</strong> La cita queda registrada como cancelada y libera el horario del doctor. No se puede deshacer.</p>
+          <div class="confirmacion-botones">
+            <button type="button" class="boton" id="detalle-volver">Volver</button>
+            <button type="button" class="boton boton-peligro" id="detalle-cancelar-si">Sí, cancelar cita</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-pie" id="detalle-acciones">
+        <button type="button" class="boton" id="detalle-cerrar">Cerrar</button>
+        <button type="button" class="boton boton-peligro" id="detalle-cancelar" hidden>Cancelar cita</button>
+        <button type="button" class="boton" id="detalle-atender" hidden>Marcar como atendida</button>
+        <button type="button" class="boton boton-primario" id="detalle-confirmar" hidden>Confirmar cita</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/vendor/fullcalendar/index.global.min.js"></script>
+  <script src="/vendor/fullcalendar-idiomas/es.global.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/calendar.js"></script>
+</body>
+</html>
