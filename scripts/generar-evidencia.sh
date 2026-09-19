@@ -128,8 +128,16 @@ llamar GET "/api/citas/$ID"
 llamar PATCH "/api/citas/$ID2/estado" '{"estado":"cancelada"}'
 cerrar
 
-# ---------------- 3. Git ----------------
-echo "## 4. Historial de Git"
+# ---------------- 3. Pruebas ----------------
+echo "## 4. Pruebas automáticas"
+echo
+abrir
+ejecutar npm test
+ejecutar npm run test:integracion
+cerrar
+
+# ---------------- 4. Git ----------------
+echo "## 5. Historial de Git"
 echo
 abrir
 ejecutar git branch -a
@@ -138,7 +146,7 @@ ejecutar git log main --merges --oneline
 cerrar
 
 # ---------------- 4. Capturas ----------------
-echo "## 5. Capturas de la interfaz"
+echo "## 6. Capturas de la interfaz"
 echo
 for imagen in docs/capturas/*.png; do
   nombre=$(basename "$imagen" .png)

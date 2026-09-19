@@ -6,14 +6,19 @@ El trabajo se entrega por ramas de feature. Cada una se cierra con un Pull Reque
 
 ## Base de datos
 
-MySQL corre solo en Docker. Para levantarla:
+MySQL corre solo en Docker y solo mientras tú lo enciendes. No se reinicia por su cuenta con la máquina.
 
 ```
 cp .env.example .env
-docker compose up -d
+npm run db:up       # enciende MySQL y espera a que esté listo
+npm run db:stop     # lo apaga y conserva los datos
+npm run db:down     # borra el contenedor y conserva los datos (están en el volumen)
+npm run db:reset    # borra también los datos y vuelve a crear todo desde cero
 ```
 
-La primera vez se crean las tablas y los datos de ejemplo desde `db/init`. Esos scripts solo se ejecutan con el volumen vacío. Si cambias el esquema y quieres empezar de cero, borra el volumen con `docker compose down -v` y vuelve a levantar.
+Son atajos de `docker compose up -d --wait`, `docker compose stop`, `docker compose down` y `docker compose down -v`. Los datos viven en un volumen con nombre, así que sobreviven a `db:stop` y a `db:down`. Solo `db:reset` los borra.
+
+La primera vez se crean las tablas y los datos de ejemplo desde `db/init`. Esos scripts solo se ejecutan con el volumen vacío.
 
 Si el puerto 3306 ya está ocupado en tu máquina, cambia `MYSQL_PORT` en `.env` (por ejemplo a 3307) y usa el mismo valor cuando arranques la API.
 
@@ -90,3 +95,15 @@ Cada rama se cerró con un Pull Request hacia `main` y se fusionó con un merge 
 - `feature/validacion-conflictos-estados`
 - `feature/fullcalendar-ui`
 - `feature/evidencia`
+
+## Pruebas
+
+Usan el ejecutor de pruebas que trae Node (22 o superior), sin dependencias extra.
+
+```
+npm test                    # unitarias: reglas de negocio, sin base de datos
+npm run db:up               # enciende MySQL
+npm run test:integracion    # API y MySQL reales, de extremo a extremo
+```
+
+Las unitarias revisan la validación de entrada, las fechas, la doble reserva y las transiciones de estado con repositorios de prueba. Las de integración levantan la API contra MySQL en Docker y comprueban los códigos 200, 201, 400, 404 y 409, que los cambios de estado se guarden en la base, que cancelar libere el horario y que ocho peticiones simultáneas al mismo horario dejen solo una cita. Cada corrida usa un día lejano al azar y cancela lo que creó, así que se puede repetir. Si MySQL está apagada, avisan con el comando para encenderla.
