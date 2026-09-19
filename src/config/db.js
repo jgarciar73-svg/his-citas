@@ -11,4 +11,20 @@ const pool = mysql.createPool({
   charset: 'utf8mb4',
 });
 
-module.exports = { pool };
+// Ejecuta `trabajo` dentro de una transacción. Si lanza un error se hace rollback.
+async function transaccion(trabajo) {
+  const conexion = await pool.getConnection();
+  try {
+    await conexion.beginTransaction();
+    const resultado = await trabajo(conexion);
+    await conexion.commit();
+    return resultado;
+  } catch (error) {
+    await conexion.rollback();
+    throw error;
+  } finally {
+    conexion.release();
+  }
+}
+
+module.exports = { pool, transaccion };

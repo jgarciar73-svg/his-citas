@@ -1,7 +1,7 @@
 const citasRepository = require('../repositories/citasRepository');
 const doctoresRepository = require('../repositories/doctoresRepository');
 const pacientesRepository = require('../repositories/pacientesRepository');
-const { DatosInvalidos, NoEncontrado } = require('../errors');
+const { DatosInvalidos, NoEncontrado, ConflictoHorario } = require('../errors');
 const fechas = require('../utils/fechas');
 
 const ESTADOS = ['pendiente', 'confirmada', 'cancelada', 'atendida'];
@@ -97,6 +97,21 @@ function formatear(fila) {
   };
 }
 
+// Lanza 409 si el doctor ya tiene una cita activa que se solapa con el horario pedido.
+// Debe llamarse dentro de conBloqueoDeDoctor para que la comprobación y el guardado sean atómicos.
+async function exigirDisponibilidad({ doctorId, inicio, fin, excluirId }, conexion) {
+  const choque = await citasRepository.buscarSolape({ doctorId, inicio, fin, excluirId }, conexion);
+  if (!choque) return;
+
+  const dia = choque.inicio.slice(0, 10);
+  const desde = choque.inicio.slice(11, 16);
+  const hasta = choque.fin.slice(11, 16);
+  throw new ConflictoHorario(
+    `El doctor ya tiene una cita activa el ${dia} de ${desde} a ${hasta}. Elige otro horario.`,
+    [{ cita_id: choque.id, inicio: fechas.aIso(choque.inicio), fin: fechas.aIso(choque.fin) }]
+  );
+}
+
 async function obtenerExistente(id) {
   const cita = await citasRepository.obtenerPorId(id);
   if (!cita) throw new NoEncontrado(`La cita ${id} no existe.`);
@@ -155,8 +170,11 @@ async function crear(cuerpo) {
 
   await exigirPacienteYDoctor(pacienteId, doctorId);
 
-  const id = await citasRepository.crear({ pacienteId, doctorId, inicio, fin, motivo });
-  return formatear(await citasRepository.obtenerPorId(id));
+  return citasRepository.conBloqueoDeDoctor(doctorId, async (conexion) => {
+    await exigirDisponibilidad({ doctorId, inicio, fin }, conexion);
+    const id = await citasRepository.crear({ pacienteId, doctorId, inicio, fin, motivo }, conexion);
+    return formatear(await citasRepository.obtenerPorId(id, conexion));
+  });
 }
 
 // Reprograma una cita: cambia fecha y hora, y opcionalmente el doctor o el motivo.
@@ -173,13 +191,16 @@ async function reprogramar(id, cuerpo) {
   const doctorFinal = doctorId || actual.doctor_id;
   if (doctorId) await exigirPacienteYDoctor(null, doctorId);
 
-  await citasRepository.actualizarHorario(idValido, {
-    doctorId: doctorFinal,
-    inicio,
-    fin,
-    motivo: motivo || actual.motivo,
+  return citasRepository.conBloqueoDeDoctor(doctorFinal, async (conexion) => {
+    // Se excluye la propia cita: moverla un poco dentro de su mismo horario no es un choque.
+    await exigirDisponibilidad({ doctorId: doctorFinal, inicio, fin, excluirId: idValido }, conexion);
+    await citasRepository.actualizarHorario(
+      idValido,
+      { doctorId: doctorFinal, inicio, fin, motivo: motivo || actual.motivo },
+      conexion
+    );
+    return formatear(await citasRepository.obtenerPorId(idValido, conexion));
   });
-  return formatear(await citasRepository.obtenerPorId(idValido));
 }
 
 async function cambiarEstado(id, cuerpo) {
