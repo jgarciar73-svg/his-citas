@@ -105,6 +105,7 @@ function formatear(fila) {
     estado: fila.estado,
     // Le dice al cliente qué botones ofrecer sin que tenga que conocer las reglas.
     transiciones_permitidas: TRANSICIONES[fila.estado],
+    reprogramable: ESTADOS_ACTIVOS.includes(fila.estado),
     creado_en: fila.creado_en,
     actualizado_en: fila.actualizado_en,
   };

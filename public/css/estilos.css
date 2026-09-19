@@ -41,6 +41,8 @@ body {
   line-height: 1.45;
   color: var(--tinta);
   background: var(--papel);
+  /* Cifras del mismo ancho: las horas quedan alineadas en columna. */
+  font-variant-numeric: tabular-nums;
 }
 
 :focus-visible {
@@ -204,7 +206,7 @@ select {
 
 .aviso-zona {
   position: absolute;
-  top: 10px;
+  bottom: 24px;
   left: 50%;
   z-index: 20;
   width: min(560px, 92%);
@@ -457,6 +459,10 @@ dialog.panel::backdrop {
   line-height: 1.25;
 }
 
+.ev > span {
+  display: block;
+}
+
 .ev-hora,
 .ev-doctor {
   font-size: 0.82rem;
@@ -467,15 +473,28 @@ dialog.panel::backdrop {
   font-weight: 700;
 }
 
-.fc-timegrid-event-short .ev,
+/* Citas de 30 minutos o vistas de mes: una sola línea con hora y nombre. */
+.ev-corto,
 .fc-daygrid-event .ev {
   display: flex;
   gap: 6px;
   white-space: nowrap;
 }
 
-.fc-timegrid-event-short .ev-doctor,
-.fc-daygrid-event .ev-doctor {
+.ev-corto > span,
+.fc-daygrid-event .ev > span {
+  display: inline;
+}
+
+.ev-corto .ev-nombre,
+.fc-daygrid-event .ev .ev-nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ev-corto .ev-doctor,
+.fc-daygrid-event .ev .ev-doctor {
   display: none;
 }
 
