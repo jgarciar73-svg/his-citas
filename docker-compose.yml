@@ -1,12 +1,13 @@
 # MySQL 8 para el módulo de citas del HIS.
 # Se levanta con un solo comando: docker compose up -d
+# No tiene política de reinicio: solo corre cuando tú lo enciendes y se queda apagado
+# después de un reinicio de la máquina o de Docker. Se apaga con: docker compose stop
 # Las variables se leen del archivo .env (copia de .env.example). Si no existe,
 # se usan los valores por defecto que aparecen después de ":-".
 services:
   mysql:
     image: mysql:8.0
     container_name: his-citas-mysql
-    restart: unless-stopped
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_his_2026}

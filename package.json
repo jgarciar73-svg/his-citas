@@ -5,10 +5,16 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "db:up": "docker compose up -d --wait",
+    "db:stop": "docker compose stop",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d --wait",
+    "test": "node --test \"test/unit/*.test.js\"",
+    "test:integracion": "node --test --test-concurrency=1 \"test/integracion/*.test.js\""
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "license": "UNLICENSED",
   "private": true,
