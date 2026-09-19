@@ -1,0 +1,33 @@
+# MySQL 8 para el módulo de citas del HIS.
+# Se levanta con un solo comando: docker compose up -d
+# Las variables se leen del archivo .env (copia de .env.example). Si no existe,
+# se usan los valores por defecto que aparecen después de ":-".
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: his-citas-mysql
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_his_2026}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-his_citas}
+      MYSQL_USER: ${MYSQL_USER:-his_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-his_pass_2026}
+      TZ: America/Guatemala
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      # Los datos sobreviven a "docker compose down" porque viven en este volumen.
+      - mysql_data:/var/lib/mysql
+      # Los scripts de esta carpeta se ejecutan solo la primera vez, con el volumen vacío.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  mysql_data:
+    name: his_citas_mysql_data
