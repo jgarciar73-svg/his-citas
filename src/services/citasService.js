@@ -1,10 +1,21 @@
 const citasRepository = require('../repositories/citasRepository');
 const doctoresRepository = require('../repositories/doctoresRepository');
 const pacientesRepository = require('../repositories/pacientesRepository');
-const { DatosInvalidos, NoEncontrado } = require('../errors');
+const { DatosInvalidos, NoEncontrado, ConflictoHorario } = require('../errors');
 const fechas = require('../utils/fechas');
 
 const ESTADOS = ['pendiente', 'confirmada', 'cancelada', 'atendida'];
+
+// A qué estados puede pasar una cita desde cada estado. Cancelada y atendida son finales.
+const TRANSICIONES = {
+  pendiente: ['confirmada', 'cancelada'],
+  confirmada: ['atendida', 'cancelada'],
+  cancelada: [],
+  atendida: [],
+};
+
+// Solo las citas activas ocupan horario y se pueden reprogramar.
+const ESTADOS_ACTIVOS = ['pendiente', 'confirmada'];
 
 // ---------- Lectura y validación de datos de entrada (RQF-08) ----------
 
@@ -92,9 +103,26 @@ function formatear(fila) {
     fin: fechas.aIso(fila.fin),
     motivo: fila.motivo,
     estado: fila.estado,
+    // Le dice al cliente qué botones ofrecer sin que tenga que conocer las reglas.
+    transiciones_permitidas: TRANSICIONES[fila.estado],
     creado_en: fila.creado_en,
     actualizado_en: fila.actualizado_en,
   };
+}
+
+// Lanza 409 si el doctor ya tiene una cita activa que se solapa con el horario pedido.
+// Debe llamarse dentro de conBloqueoDeDoctor para que la comprobación y el guardado sean atómicos.
+async function exigirDisponibilidad({ doctorId, inicio, fin, excluirId }, conexion) {
+  const choque = await citasRepository.buscarSolape({ doctorId, inicio, fin, excluirId }, conexion);
+  if (!choque) return;
+
+  const dia = choque.inicio.slice(0, 10);
+  const desde = choque.inicio.slice(11, 16);
+  const hasta = choque.fin.slice(11, 16);
+  throw new ConflictoHorario(
+    `El doctor ya tiene una cita activa el ${dia} de ${desde} a ${hasta}. Elige otro horario.`,
+    [{ cita_id: choque.id, inicio: fechas.aIso(choque.inicio), fin: fechas.aIso(choque.fin) }]
+  );
 }
 
 async function obtenerExistente(id) {
@@ -155,8 +183,11 @@ async function crear(cuerpo) {
 
   await exigirPacienteYDoctor(pacienteId, doctorId);
 
-  const id = await citasRepository.crear({ pacienteId, doctorId, inicio, fin, motivo });
-  return formatear(await citasRepository.obtenerPorId(id));
+  return citasRepository.conBloqueoDeDoctor(doctorId, async (conexion) => {
+    await exigirDisponibilidad({ doctorId, inicio, fin }, conexion);
+    const id = await citasRepository.crear({ pacienteId, doctorId, inicio, fin, motivo }, conexion);
+    return formatear(await citasRepository.obtenerPorId(id, conexion));
+  });
 }
 
 // Reprograma una cita: cambia fecha y hora, y opcionalmente el doctor o el motivo.
@@ -170,16 +201,22 @@ async function reprogramar(id, cuerpo) {
   if (errores.length) throw new DatosInvalidos(errores);
 
   const actual = await obtenerExistente(idValido);
+  if (!ESTADOS_ACTIVOS.includes(actual.estado)) {
+    throw new DatosInvalidos([`No se puede reprogramar una cita ${actual.estado}.`]);
+  }
   const doctorFinal = doctorId || actual.doctor_id;
   if (doctorId) await exigirPacienteYDoctor(null, doctorId);
 
-  await citasRepository.actualizarHorario(idValido, {
-    doctorId: doctorFinal,
-    inicio,
-    fin,
-    motivo: motivo || actual.motivo,
+  return citasRepository.conBloqueoDeDoctor(doctorFinal, async (conexion) => {
+    // Se excluye la propia cita: moverla un poco dentro de su mismo horario no es un choque.
+    await exigirDisponibilidad({ doctorId: doctorFinal, inicio, fin, excluirId: idValido }, conexion);
+    await citasRepository.actualizarHorario(
+      idValido,
+      { doctorId: doctorFinal, inicio, fin, motivo: motivo || actual.motivo },
+      conexion
+    );
+    return formatear(await citasRepository.obtenerPorId(idValido, conexion));
   });
-  return formatear(await citasRepository.obtenerPorId(idValido));
 }
 
 async function cambiarEstado(id, cuerpo) {
@@ -191,7 +228,16 @@ async function cambiarEstado(id, cuerpo) {
   }
   if (errores.length) throw new DatosInvalidos(errores);
 
-  await obtenerExistente(idValido);
+  const actual = await obtenerExistente(idValido);
+  const permitidos = TRANSICIONES[actual.estado];
+  if (!permitidos.includes(cuerpo.estado)) {
+    const detalle = permitidos.length
+      ? `Desde ${actual.estado} solo se puede pasar a: ${permitidos.join(', ')}.`
+      : `Una cita ${actual.estado} ya no cambia de estado.`;
+    throw new DatosInvalidos([`No se puede cambiar la cita de ${actual.estado} a ${cuerpo.estado}. ${detalle}`]);
+  }
+
+  // Cancelar es solo cambiar el estado: el registro se conserva como histórico (RQF-05).
   await citasRepository.actualizarEstado(idValido, cuerpo.estado);
   return formatear(await citasRepository.obtenerPorId(idValido));
 }
