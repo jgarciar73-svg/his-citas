@@ -68,3 +68,25 @@ Con la base de datos y la API en marcha, abre http://localhost:3000.
 Colores: amarillo pendiente, verde confirmada, rojo cancelada, azul atendida. Las citas canceladas y atendidas no se pueden arrastrar.
 
 FullCalendar 6 y la fuente Atkinson Hyperlegible se sirven desde `node_modules`, por lo que la interfaz no necesita internet.
+
+## Evidencia
+
+`EVIDENCIA.md` se genera con un script. Con la base de datos y la API en marcha:
+
+```
+bash scripts/generar-evidencia.sh
+```
+
+Incluye la salida de `docker ps`, la prueba de persistencia, las respuestas de la API con los códigos 200, 201, 400, 404 y 409, y el historial de Git. En una máquina sin Docker se puede correr con `SIN_DOCKER=1`, y las secciones de Docker quedan marcadas como pendientes.
+
+Las capturas de la interfaz están en `docs/capturas/` y el texto de cada Pull Request en `docs/prs/`.
+
+## Ramas
+
+Cada rama se cerró con un Pull Request hacia `main` y se fusionó con un merge commit:
+
+- `feature/docker-mysql-schema`
+- `feature/api-rest-citas`
+- `feature/validacion-conflictos-estados`
+- `feature/fullcalendar-ui`
+- `feature/evidencia`
