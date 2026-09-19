@@ -16,3 +16,26 @@ docker compose up -d
 La primera vez se crean las tablas y los datos de ejemplo desde `db/init`. Esos scripts solo se ejecutan con el volumen vacío. Si cambias el esquema y quieres empezar de cero, borra el volumen con `docker compose down -v` y vuelve a levantar.
 
 Si el puerto 3306 ya está ocupado en tu máquina, cambia `MYSQL_PORT` en `.env` (por ejemplo a 3307) y usa el mismo valor cuando arranques la API.
+
+## API
+
+Se arranca con Node.js 18 o superior, después de levantar la base de datos:
+
+```
+npm install
+npm start
+```
+
+Endpoints (todos responden JSON):
+
+- `GET /api/citas` con filtros opcionales `doctor_id`, `paciente_id`, `desde`, `hasta`
+- `POST /api/citas`
+- `GET /api/citas/:id`
+- `PUT /api/citas/:id`
+- `PATCH /api/citas/:id/estado`
+- `GET /api/doctores`
+- `GET /api/pacientes`
+
+Códigos de respuesta: 200 y 201 cuando todo sale bien, 400 por datos inválidos y 404 cuando el recurso no existe. Un JSON o un cuerpo mal formado también da 400. Si un `paciente_id` o `doctor_id` del cuerpo no existe, la respuesta es 400 (es un dato inválido de la petición), mientras que 404 se reserva para cuando el recurso de la URL no existe.
+
+Las fechas se envían como hora local sin zona, por ejemplo `2026-10-05T09:00`.
